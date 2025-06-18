@@ -38,8 +38,8 @@
 </head>
 
 <body>
-    <h2>💸 Пополните свой баланс XTR</h2>
-    <input id="amount" type="number" placeholder="Введите сумму XTR" />
+    <h2>💸 Пополнение XTR</h2>
+    <input id="amount" type="number" placeholder="Введите сумму" value="{{AMOUNT}}" />
     <br>
     <button onclick="buy()">Пополнить</button>
 
@@ -57,11 +57,15 @@
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    telegram_id: tg.initDataUnsafe.user.id,
+                    telegram_id: tg.initDataUnsafe?.user?.id,
                     amount: amount
                 })
             });
             const invoice = await res.json();
+            if (!invoice?.slug) {
+                alert("Ошибка при создании оплаты. Попробуйте позже.");
+                return;
+            }
             tg.openInvoice(invoice.slug);
         }
     </script>
