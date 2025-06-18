@@ -1,74 +1,106 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Пополнение XTR</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body {
-            font-family: sans-serif;
-            background-color: #f8f8f8;
-            margin: 0;
-            padding: 20px;
-            text-align: center;
-        }
-
-        input,
-        button {
-            padding: 12px;
-            font-size: 16px;
-            border-radius: 10px;
-            margin: 10px 0;
-        }
-
-        input {
-            border: 1px solid #ccc;
-            width: 200px;
-        }
-
-        button {
-            background-color: #0088cc;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Пополнение XTR</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f8f8f8;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    input, button {
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 10px;
+      margin: 10px 0;
+    }
+    input {
+      border: 1px solid #ccc;
+      width: 200px;
+    }
+    button {
+      background-color: #0088cc;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    #log {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #333;
+      text-align: left;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      background: #f1f1f1;
+      padding: 10px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+    }
+  </style>
 </head>
-
 <body>
-    <h2>💸 Пополнение XTR</h2>
-    <input id="amount" type="number" placeholder="Введите сумму" value="{{AMOUNT}}" />
-    <br>
-    <button onclick="buy()">Пополнить</button>
+  <h2>💸 Пополнение XTR</h2>
+  <input id="amount" type="number" placeholder="Введите сумму" value="{{AMOUNT}}" />
+  <br>
+  <button onclick="buy()">Пополнить</button>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
+  <div id="log"></div>
 
-        async function buy() {
-            const amount = parseInt(document.getElementById("amount").value);
-            if (!amount || amount < 1) {
-                alert("Введите сумму больше 0");
-                return;
-            }
-            const res = await fetch("/create-xtr", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    telegram_id: tg.initDataUnsafe?.user?.id,
-                    amount: amount
-                })
-            });
-            const invoice = await res.json();
-            if (!invoice?.slug) {
-                alert("Ошибка при создании оплаты. Попробуйте позже.");
-                return;
-            }
-            tg.openInvoice(invoice.slug);
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    function log(msg) {
+      const div = document.getElementById("log");
+      div.textContent += `\n${msg}`;
+    }
+
+    log("initData: " + JSON.stringify(tg.initDataUnsafe));
+
+    async function buy() {
+      const amount = parseInt(document.getElementById("amount").value);
+      if (!amount || amount < 1) {
+        alert("Введите сумму больше 0");
+        return;
+      }
+
+      const userId = tg.initDataUnsafe?.user?.id;
+      if (!userId) {
+        log("❌ Ошибка: Telegram ID не определён");
+        alert("Ошибка: Telegram ID не найден");
+        return;
+      }
+
+      log(`⏳ Отправка запроса на создание инвойса на ${amount} XTR`);
+
+      try {
+        const res = await fetch("/create-xtr", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ telegram_id: userId, amount })
+        });
+        const invoice = await res.json();
+
+        log("📩 Ответ от сервера: " + JSON.stringify(invoice));
+
+        if (!invoice?.slug) {
+          alert("Ошибка при создании оплаты. Попробуйте позже.");
+          return;
         }
-    </script>
-</body>
 
+        log("✅ Открытие оплаты...");
+        tg.openInvoice(invoice.slug);
+      } catch (e) {
+        log("❌ Ошибка fetch: " + e);
+        alert("Сервер недоступен. Попробуйте позже.");
+      }
+    }
+  </script>
+</body>
 </html>
