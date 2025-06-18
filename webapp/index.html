@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang=\"ru\">
+<html lang="ru">
 <head>
-  <meta charset=\"UTF-8\">
-  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Пополнение XTR</title>
-  <script src=\"https://telegram.org/js/telegram-web-app.js\"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body {
       font-family: sans-serif;
@@ -46,74 +46,68 @@
 </head>
 <body>
   <h2>💸 Пополнение XTR</h2>
-  <input id=\"amount\" type=\"number\" placeholder=\"Введите сумму\" value=\"{{AMOUNT}}\" />
+  <input id="amount" type="number" placeholder="Введите сумму" value="{{AMOUNT}}" />
   <br>
-  <button onclick=\"buy()\">Пополнить</button>
+  <button onclick="buy()">Пополнить</button>
 
-  <div id=\"log\"></div>
+  <div id="log"></div>
 
   <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
 
     function log(msg) {
-      const div = document.getElementById(\"log\");
+      const div = document.getElementById("log");
       div.textContent += `\n${msg}`;
     }
 
-    log(\"initData: \" + JSON.stringify(tg.initDataUnsafe));
+    log("initData: " + JSON.stringify(tg.initDataUnsafe));
 
     async function buy() {
-      const amount = parseInt(document.getElementById(\"amount\").value);
+      const amount = parseInt(document.getElementById("amount").value);
       if (!amount || amount < 1) {
-        alert(\"Введите сумму больше 0\");
+        alert("Введите сумму больше 0");
         return;
       }
 
       const userId = tg.initDataUnsafe?.user?.id;
       if (!userId) {
-        log(\"❌ Ошибка: Telegram ID не определён\");
-        alert(\"Ошибка: Telegram ID не найден\");
+        log("❌ Ошибка: Telegram ID не определён");
+        alert("Ошибка: Telegram ID не найден");
         return;
       }
 
       log(`⏳ Отправка запроса на создание инвойса на ${amount} XTR`);
 
       try {
-        const res = await fetch(\"/create-xtr\", {
-          method: \"POST\",
-          headers: { \"Content-Type\": \"application/json\" },
+        const res = await fetch("create-xtr", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ telegram_id: userId, amount })
         });
         const invoice = await res.json();
 
-        log(\"📩 Ответ от сервера: \" + JSON.stringify(invoice));
+        log("📩 Ответ от сервера: " + JSON.stringify(invoice));
 
         if (!invoice) {
-          alert(\"Ошибка при создании оплаты. Попробуйте позже.\");
+          alert("Ошибка при создании оплаты. Попробуйте позже.");
           return;
         }
 
         if (invoice.slug) {
-          log(\"✅ Открытие оплаты через tg.openInvoice...\");
+          log("✅ Открытие оплаты через tg.openInvoice...");
           tg.openInvoice(invoice.slug);
-
-          setTimeout(() => {
-            log(\"🧾 Счёт открыт, закрываем WebApp через 2с\");
-            tg.close();
-          }, 2000);
-
-        } else if (typeof invoice === 'string' && invoice.startsWith(\"https://t.me/\")) {
-          log(\"✅ Открытие оплаты через переход по ссылке...\");
+        } else if (typeof invoice === 'string' && invoice.startsWith("https://t.me/")) {
+          log("✅ Открытие оплаты через переход по ссылке...");
           window.location.href = invoice;
         } else {
-          log(\"❌ Неизвестный формат инвойса. Ожидалась ссылка или slug.\");
-          alert(\"Ошибка: неверный формат инвойса\");
+          log("❌ Неизвестный формат инвойса. Ожидалась ссылка или slug.");
+          alert("Ошибка: неверный формат инвойса");
         }
 
       } catch (e) {
-        log(\"❌ Ошибка fetch: \" + e);
-        alert(\"Сервер недоступен. Попробуйте позже.\");
+        log("❌ Ошибка fetch: " + e);
+        alert("Сервер недоступен. Попробуйте позже.");
       }
     }
   </script>
