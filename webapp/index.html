@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,22 +14,27 @@
       padding: 20px;
       text-align: center;
     }
-    input, button {
+
+    input,
+    button {
       padding: 12px;
       font-size: 16px;
       border-radius: 10px;
       margin: 10px 0;
     }
+
     input {
       border: 1px solid #ccc;
       width: 200px;
     }
+
     button {
       background-color: #0088cc;
       color: white;
       border: none;
       cursor: pointer;
     }
+
     #log {
       margin-top: 20px;
       font-size: 14px;
@@ -44,6 +50,7 @@
     }
   </style>
 </head>
+
 <body>
   <h2>💸 Пополнение XTR</h2>
   <input id="amount" type="number" placeholder="Введите сумму" value="{{AMOUNT}}" />
@@ -85,24 +92,31 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ telegram_id: userId, amount })
         });
-        const invoice = await res.json();
 
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const invoice = await res.json();
         log("📩 Ответ от сервера: " + JSON.stringify(invoice));
 
-        if (!invoice) {
-          alert("Ошибка при создании оплаты. Попробуйте позже.");
+        // Проверяем на ошибку
+        if (invoice.error) {
+          alert("Ошибка: " + invoice.error);
           return;
         }
 
-        if (invoice.slug) {
-          log("✅ Открытие оплаты через tg.openInvoice...");
-          tg.openInvoice(invoice.slug);
-        } else if (typeof invoice === 'string' && invoice.startsWith("https://t.me/")) {
-          log("✅ Открытие оплаты через переход по ссылке...");
-          window.location.href = invoice;
+        // Для XTR Telegram возвращает invoice link, не slug
+        if (invoice && typeof invoice === 'string' && invoice.startsWith("https://t.me/")) {
+          log("✅ Открытие оплаты через ссылку...");
+          tg.openTelegramLink(invoice); // Используйте openTelegramLink вместо openInvoice
+        } else if (invoice && invoice.url) {
+          log("✅ Открытие оплаты через URL...");
+          tg.openTelegramLink(invoice.url);
         } else {
-          log("❌ Неизвестный формат инвойса. Ожидалась ссылка или slug.");
-          alert("Ошибка: неверный формат инвойса");
+          log("❌ Некорректный ответ сервера");
+          log("Полный ответ: " + JSON.stringify(invoice));
+          alert("Не удалось создать платеж");
         }
 
       } catch (e) {
@@ -112,4 +126,5 @@
     }
   </script>
 </body>
+
 </html>
