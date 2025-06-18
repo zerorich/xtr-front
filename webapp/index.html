@@ -97,6 +97,7 @@
         if (invoice.slug) {
           log("✅ Открытие оплаты через tg.openInvoice...");
           tg.openInvoice(invoice.slug);
+          setTimeout(() => tg.close(), 2000);
         } else if (typeof invoice === 'string' && invoice.startsWith("https://t.me/")) {
           log("✅ Открытие оплаты через переход по ссылке...");
           window.location.href = invoice;
