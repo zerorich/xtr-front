@@ -45,7 +45,7 @@ async def create_invoice(data: BuyRequest):
         "description": f"{data.amount} XTR зачислятся на ваш баланс",
         "payload": payload,
         "currency": "XTR",
-        "prices": [{"label": "XTR Баланс", "amount": data.amount * 100}],
+        "prices": [{"label": "XTR Баланс", "amount": data.amount}],  # 🔄 без *100
         "provider_token": PROVIDER_TOKEN
     })
     print("\n[create-xtr] invoice request:", data.dict())
