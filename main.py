@@ -39,18 +39,39 @@ async def pay_with_amount(amount: int):
 
 @app.post("/create-xtr")
 async def create_invoice(data: BuyRequest):
+    if data.amount < 1:
+        return {"error": "Amount must be positive"}
+    
     payload = f"xtr_{data.telegram_id}_{data.amount}"
-    response = requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/createInvoiceLink", json={
-        "title": "Пополнение XTR",
-        "description": f"{data.amount} XTR зачислятся на ваш баланс",
-        "payload": payload,
-        "currency": "XTR",
-        "prices": [{"label": "XTR Баланс", "amount": data.amount}],  # 🔄 без *100
-        "provider_token": PROVIDER_TOKEN
-    })
-    print("\n[create-xtr] invoice request:", data.dict())
-    print("[create-xtr] telegram response:", response.text)
-    return response.json().get("result", {})
+    
+    try:
+        response = requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/createInvoiceLink",
+            json={
+                "title": "Пополнение XTR",
+                "description": f"{data.amount} XTR зачислятся на ваш баланс",
+                "payload": payload,
+                "currency": "XTR", 
+                "prices": [{"label": "XTR Баланс", "amount": data.amount}],
+                "provider_token": PROVIDER_TOKEN
+            },
+            timeout=10
+        )
+        
+        print(f"[create-xtr] Request: {data.dict()}")
+        print(f"[create-xtr] Response: {response.text}")
+        
+        result = response.json()
+        
+        if not result.get("ok"):
+            print(f"❌ Telegram API Error: {result}")
+            return {"error": "Failed to create invoice"}
+            
+        return result.get("result", {})
+        
+    except requests.RequestException as e:
+        print(f"❌ Request failed: {e}")
+        return {"error": "Service unavailable"}
 
 @app.post("/payment-success")
 async def on_payment_success(req: Request):
