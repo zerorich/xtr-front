@@ -48,16 +48,19 @@ async def create_invoice(data: BuyRequest):
         "prices": [{"label": "XTR Баланс", "amount": data.amount * 100}],
         "provider_token": PROVIDER_TOKEN
     })
-    print("CreateInvoiceLink response:", response.text)
+    print("\n[create-xtr] invoice request:", data.dict())
+    print("[create-xtr] telegram response:", response.text)
     return response.json().get("result", {})
 
 @app.post("/payment-success")
 async def on_payment_success(req: Request):
     data = await req.json()
+    print("\n[payment-success] payload:", data)
     payload = data.get("payload")
     if payload and payload.startswith("xtr_"):
         parts = payload.split("_")
         telegram_id = int(parts[1])
         amount = int(parts[2])
         users.update_one({"telegram_id": telegram_id}, {"$inc": {"balance.main": amount}}, upsert=True)
+        print(f"[payment-success] +{amount} XTR → {telegram_id}")
     return {"ok": True}
